@@ -4,6 +4,7 @@ const app = express();
 
 app.use(express.json());
 
+
 mongoose.connect("mongodb://localhost:27017/meubancodedados").then(() => {
   const modelodeUsuario = mongoose.model(
     "contas",
