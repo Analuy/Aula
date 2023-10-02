@@ -1,45 +1,43 @@
-const express = require("express")
-const fs= require("fs")
-const app = express()
-app.use(express.urlencoded({extended:true}))
+const express = require("express");
+const mongoose = require("mongoose");
+const app = express();
 
+app.use(express.json());
 
-app.set('view engine', 'ejs')
-     
-app.post('/home', function(req,res){
-  const salvar = JSON.stringify(req.body)
-  fs.writeFileSync(`${req.body.email}.json`, salvar, (err) =>{
-   if(err){
-        res.send({message: Erro})
-   }else{
-         res.send({message: 'Okay'})  
-   }
-  } )
- 
-})
-app.get('/lista', function(req, res) {
-   fs.readdir(__dirname, (err,files)=>{
-     var dados = files.filter(file => file.includes('@') && file.includes('.json'))
-     res.send( {dados: dados})
-    
-   })
- })
-app.get('/dados/:email', (req,res)=>{
-   var dados = req.params
-   var dadosfinais = JSON.parse(fs.readFileSync(dados.email))
-   res.send({dados: dadosfinais})
-})
-app.get('/apagar/:email', (req,res)=>{
-   var dados = req.params
-   if (fs.existsSync(dados.email)){
-        res.send({message: 'Okay'})
-       fs.rmSync(dados.email)
-   }else{
-        res.send({message: 'Erro'})
-   }
-})
+mongoose.connect("mongodb://localhost:27017/meubancodedados").then(() => {
+  const modelodeUsuario = mongoose.model(
+    "contas",
+    new Schema({
+      email: String,
+      password: String,
+    })
+  );
 
+  app.get("/lerdados/:email", async (req, res) => {
+    const usuarioEncontrado = await modelodeUsuario.findOne({
+      email: req.params.email,
+    });
+    res.json(usuarioEncontrado);
+  });
 
-app.listen(8080, () =>{
-   console.log("Foi :)")
-})
+  app.post("/criardados", async (req, res) => {
+    const usuarioCriado = await modelodeUsuario.create(req.body);
+    res.json(usuarioCriado);
+  });
+
+  app.delete("/deletardados", async (req, res) => {
+    const usuarioDeletado = await modelodeUsuario.deleteOne(req.body);
+    res.json(usuarioDeletado);
+  });
+
+  app.put("/atualizardados", async (req, res) => {
+    const usuarioAtualizado = await modelodeUsuario.findOneAndUpdate(
+      { email: req.body.oldemail, password: req.body.oldpassword },
+      { email, password },
+      { returnDocument: "after" }
+    );
+    res.json(usuarioAtualizado);
+  });
+
+  app.listen(3000);
+});
